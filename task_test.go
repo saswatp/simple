@@ -44,9 +44,10 @@ func TestHTTPTask_Run(t *testing.T) {
 	notifyC := make(chan error)
 	doneC := make(chan bool)
 	//Create a task
-	task := simple.HTTPTask{
+
+	/*task := simple.HTTPTask{
 		Req: simple.HTTPReq{
-			URI:                 "http://localhost:205/philips-lightbulb-1",
+			URI:                 "
 			Headers:             nil,
 			ContentLength:       0,
 			Method:              "GET",
@@ -59,6 +60,34 @@ func TestHTTPTask_Run(t *testing.T) {
 			TLSHandshakeTimeout: 0,
 			KeepAlive:           0,
 			TLSConfig:           &tls.Config{},
+		},
+		Interval: 5 * time.Second,
+		HowLong:  30 * time.Second,
+		DoneC:    doneC,
+		NotifyC:  notifyC,
+	}
+	*/
+
+	task := simple.HTTPTask{
+		Req: simple.HTTPReq{
+			URI:           "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity",
+			Headers:       nil,
+			ContentLength: 0,
+			Method:        "GET",
+			Body:          nil,
+			RetryCount:    2,
+			ShowDebug:     false,
+			AP: simple.AuthParams{
+				UserName: "ac07755a9de146e78f452f65d9494fd2",
+				Password: "072c37da97ef40e5a0d6faa89f362f22",
+			},
+			DialTimeout:         10 * time.Second,
+			Timeout:             60 * time.Second,
+			TLSHandshakeTimeout: 10 * time.Second,
+			KeepAlive:           0,
+			TLSConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		},
 		Interval: 5 * time.Second,
 		HowLong:  30 * time.Second,
