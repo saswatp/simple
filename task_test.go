@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"fmt"
 
 	"github.com/simple"
 )
@@ -41,59 +40,41 @@ func TestSend(t *testing.T) {
 
 func TestHTTPTask_Run(t *testing.T) {
 
-	notifyC := make(chan error)
-	doneC := make(chan bool)
-	//Create a task
 
-	/*task := simple.HTTPTask{
-		Req: simple.HTTPReq{
-			URI:                 "
-			Headers:             nil,
-			ContentLength:       0,
-			Method:              "GET",
-			Body:                nil,
-			RetryCount:          0,
-			ShowDebug:           false,
-			AP:                  simple.AuthParams{},
-			DialTimeout:         2 * time.Second,
-			Timeout:             0,
-			TLSHandshakeTimeout: 0,
-			KeepAlive:           0,
-			TLSConfig:           &tls.Config{},
-		},
-		Interval: 5 * time.Second,
-		HowLong:  30 * time.Second,
-		DoneC:    doneC,
-		NotifyC:  notifyC,
-	}
-	*/
+	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&end="
 
-	task := simple.HTTPTask{
-		Req: simple.HTTPReq{
-			URI:           "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity",
-			Headers:       nil,
-			ContentLength: 0,
-			Method:        "GET",
-			Body:          nil,
-			RetryCount:    2,
-			ShowDebug:     false,
-			AP: simple.AuthParams{
-				UserName: "ac07755a9de146e78f452f65d9494fd2",
-				Password: "072c37da97ef40e5a0d6faa89f362f22",
-			},
-			DialTimeout:         10 * time.Second,
-			Timeout:             60 * time.Second,
-			TLSHandshakeTimeout: 10 * time.Second,
-			KeepAlive:           0,
-			TLSConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+	fmt.Println("Received URI ",uri)
+
+	req := simple.HTTPReq{
+		URI:           uri,
+		Headers:       nil,
+		ContentLength: 0,
+		Method:        "GET",
+		Body:          nil,
+		RetryCount:    2,
+		ShowDebug:     false,
+		AP: simple.AuthParams{
+			UserName: "34d43d3a6ec3463e9a5f5565716caa5d",
+			Password: "da2a8e4204e84939a3c43449df44b93b",
 		},
-		Interval: 5 * time.Second,
-		HowLong:  30 * time.Second,
-		DoneC:    doneC,
-		NotifyC:  notifyC,
+		DialTimeout:         10 * time.Second,
+		Timeout:             60 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+		KeepAlive:           0,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
+
+	p := simple.PollParams{
+		Interval: 5 * time.Second,
+		HowLong: 30 * time.Second,
+	}
+
+	task := simple.NewHTTPTask(req,p,"UmbrellaReport")
+	//task.Run()
+
+
 	var count int
 	go task.Run()
 
