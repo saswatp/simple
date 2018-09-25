@@ -40,10 +40,9 @@ func TestSend(t *testing.T) {
 
 func TestHTTPTask_Run(t *testing.T) {
 
-
 	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&end="
 
-	fmt.Println("Received URI ",uri)
+	fmt.Println("Received URI ", uri)
 
 	req := simple.HTTPReq{
 		URI:           uri,
@@ -68,12 +67,11 @@ func TestHTTPTask_Run(t *testing.T) {
 
 	p := simple.PollParams{
 		Interval: 5 * time.Second,
-		HowLong: 30 * time.Second,
+		HowLong:  30 * time.Second,
 	}
 
-	task := simple.NewHTTPTask(req,p,"UmbrellaReport")
+	task := simple.NewHTTPTask(req, p, "UmbrellaReport")
 	//task.Run()
-
 
 	var count int
 	go task.Run()

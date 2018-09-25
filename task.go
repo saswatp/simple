@@ -42,7 +42,7 @@ func NewHTTPTask(req HTTPReq, p PollParams, dataType string) (ht *HTTPTask) {
 	return
 }
 
-func (ht *HTTPTask) updateUmbrellaURI() (e error){
+func (ht *HTTPTask) updateUmbrellaURI() (e error) {
 
 	var newURL *url.URL
 	var endTime, startTime int64
@@ -55,17 +55,17 @@ func (ht *HTTPTask) updateUmbrellaURI() (e error){
 	endTimeStr := newURL.Query().Get("end")
 	if endTimeStr == "" {
 		endTime = time.Now().Unix()
-		startTime = endTime-int64(ht.P.Interval.Seconds())
+		startTime = endTime - int64(ht.P.Interval.Seconds())
 	} else {
-		endTime,_ = strconv.ParseInt(endTimeStr,10,64)
+		endTime, _ = strconv.ParseInt(endTimeStr, 10, 64)
 		startTime = endTime
 		endTime = endTime + int64(ht.P.Interval.Seconds())
 	}
 
 	q := newURL.Query()
 
-	q.Set("start", strconv.FormatInt(startTime,10))
-	q.Set("end", strconv.FormatInt(endTime,10))
+	q.Set("start", strconv.FormatInt(startTime, 10))
+	q.Set("end", strconv.FormatInt(endTime, 10))
 
 	newURL.RawQuery = q.Encode()
 	ht.Req.URI = newURL.String()
@@ -87,7 +87,10 @@ func (ht *HTTPTask) Run() {
 	}
 
 	ht.Res, e = ht.Req.Send()
-	ht.NotifyC <- e
+	if e != nil {
+		ht.NotifyC <- e
+		return
+	}
 
 	tc := time.NewTicker(ht.P.Interval).C
 	hlc := time.NewTicker(ht.P.HowLong).C
@@ -98,7 +101,7 @@ L:
 	for {
 		select {
 		case timeNow := <-tc:
-			fmt.Printf("Ticker kicked at %v %d", timeNow,timeNow.Unix())
+			fmt.Printf("Ticker kicked at %v %d", timeNow, timeNow.Unix())
 
 			if ht.Type == "UmbrellaReport" {
 				ht.updateUmbrellaURI()
