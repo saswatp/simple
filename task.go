@@ -10,6 +10,10 @@ import (
 
 // Design Philosphy : Don't use channel for data passing. Instead use shared structure between go routines.
 
+const (
+	fiveYears = 157680000
+)
+
 type Task interface {
 	Run() (e error)
 }
@@ -84,12 +88,22 @@ func (ht *HTTPTask) Run() {
 	if ht.Type == "UmbrellaReport" {
 		ht.updateUmbrellaURI()
 	}
-
+	fmt.Println("Sending first request to ", ht.Req.URI)
 	ht.Res, e = ht.Req.Send()
 	ht.NotifyC <- e
 
+	if ht.P.Interval <= 0 {
+		return
+	}
+
 	tc := time.NewTicker(ht.P.Interval).C
-	hlc := time.NewTicker(ht.P.HowLong).C
+	// Run indefinitely - for 5 years
+	hlc := time.NewTicker(fiveYears).C
+
+	//Run indefinitely
+	if ht.P.HowLong > 0 {
+		hlc = time.NewTicker(ht.P.HowLong).C
+	}
 
 	// TO DO: Timeout call before ticker kicks in
 L:
@@ -114,10 +128,9 @@ L:
 
 		case uc := <-ht.UpdateC:
 			ht.Req = uc
-		case <-hlc:
+		case <-hlc: //How long count
 			fmt.Printf("Task ran for duration %v seconds", ht.P.HowLong)
-			ht.DoneC <- true
-
+			break L
 		}
 	}
 
