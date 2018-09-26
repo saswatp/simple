@@ -86,10 +86,7 @@ func (ht *HTTPTask) Run() {
 	}
 
 	ht.Res, e = ht.Req.Send()
-	if e != nil {
-		ht.NotifyC <- e
-		return
-	}
+	ht.NotifyC <- e
 
 	tc := time.NewTicker(ht.P.Interval).C
 	hlc := time.NewTicker(ht.P.HowLong).C
