@@ -70,7 +70,6 @@ func (ht *HTTPTask) updateUmbrellaURI() (e error) {
 	newURL.RawQuery = q.Encode()
 	ht.Req.URI = newURL.String()
 
-	fmt.Printf("Request Umbrella URL %s\n", ht.Req.URI)
 	return
 }
 
@@ -101,11 +100,11 @@ L:
 	for {
 		select {
 		case timeNow := <-tc:
-			fmt.Printf("Ticker kicked at %v %d", timeNow, timeNow.Unix())
-
+			fmt.Printf("Ticker kicked at %v %d \n ", timeNow, timeNow.Unix())
 			if ht.Type == "UmbrellaReport" {
 				ht.updateUmbrellaURI()
 			}
+			fmt.Printf("Requesting URL %s\n", ht.Req.URI)
 			ht.Res, e = ht.Req.Send()
 			ht.NotifyC <- e
 
