@@ -57,7 +57,7 @@ func TestHTTPTask_Run(t *testing.T) {
 			Password: "da2a8e4204e84939a3c43449df44b93b",
 		},
 		DialTimeout:         10 * time.Second,
-		Timeout:             60 * time.Second,
+		Timeout:             10 * time.Second,
 		TLSHandshakeTimeout: 10 * time.Second,
 		KeepAlive:           0,
 		TLSConfig: &tls.Config{
@@ -66,8 +66,8 @@ func TestHTTPTask_Run(t *testing.T) {
 	}
 
 	p := simple.PollParams{
-		Interval: 5 * time.Second,
-		HowLong:  10 * time.Second,
+		Interval: 31 * time.Second,
+		HowLong:  120 * time.Second,
 	}
 
 	task := simple.NewHTTPTask(req, p, "UmbrellaReport")
@@ -83,6 +83,7 @@ L:
 		case e, ok := <-task.NotifyC:
 
 			if !ok {
+				fmt.Println("Task notify channel closed")
 				break L
 			}
 			count++
@@ -93,26 +94,13 @@ L:
 					bodyBytes, _ := ioutil.ReadAll(task.Res.Body)
 					fmt.Println("Response = ", string(bodyBytes))
 					task.Res.Body.Close()
-
-				} else {
-					t.Fail()
 				}
 			}
-
 			if count == 5 {
 				task.DoneC <- true
-				break L
 			}
-
-		case _, ok := <-task.DoneC:
-			if !ok {
-				break L
-			}
-
 		}
-
 	}
-
 }
 
 func TestHTTPTask_RunInvalidPoll(t *testing.T) {
@@ -134,7 +122,7 @@ func TestHTTPTask_RunInvalidPoll(t *testing.T) {
 			Password: "da2a8e4204e84939a3c43449df44b93b",
 		},
 		DialTimeout:         10 * time.Second,
-		Timeout:             60 * time.Second,
+		Timeout:             20 * time.Second,
 		TLSHandshakeTimeout: 10 * time.Second,
 		KeepAlive:           0,
 		TLSConfig: &tls.Config{
@@ -144,7 +132,7 @@ func TestHTTPTask_RunInvalidPoll(t *testing.T) {
 
 	p := simple.PollParams{
 		Interval: 0 * time.Second,
-		HowLong:  30 * time.Second,
+		HowLong:  21 * time.Second,
 	}
 
 	task := simple.NewHTTPTask(req, p, "UmbrellaReport")
@@ -179,16 +167,8 @@ L:
 
 			if count == 5 {
 				task.DoneC <- true
-				break L
-			}
-
-		case _, ok := <-task.DoneC:
-			if !ok {
-				break L
 			}
 
 		}
-
 	}
-
 }

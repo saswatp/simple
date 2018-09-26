@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	"errors"
 )
 
 // Design Philosphy : Don't use channel for data passing. Instead use shared structure between go routines.
@@ -79,11 +80,29 @@ func (ht *HTTPTask) updateUmbrellaURI() (e error) {
 
 func (ht *HTTPTask) Run() {
 
+	var e error
+	var hlc *time.Ticker
+
 	defer close(ht.NotifyC)
 	defer close(ht.DoneC)
 	defer close(ht.UpdateC)
 
-	var e error
+	// To Do: Check if http timeout is greater than poll interval. If yes, fail the request
+	if ht.P.HowLong <= 0 {
+		// Run indefinitely - for 5 years
+		ht.P.HowLong = time.Duration(fiveYears) * time.Second
+	}
+	if ht.Req.DialTimeout > ht.P.HowLong || ht.Req.Timeout > ht.P.HowLong || ht.Req.TLSHandshakeTimeout > ht.P.HowLong{
+		e = errors.New("Invalid parameter - All timeout values must be less than poll interval ")
+		ht.NotifyC <- e
+		return
+	}
+	fmt.Printf("If not inturptted , this task will run for duration %v at interval %v \n", ht.P.HowLong, ht.P.Interval)
+
+	fmt.Printf("Task started at time %v \n", time.Now())
+	hlc = time.NewTicker(ht.P.HowLong)
+	defer hlc.Stop()
+
 
 	if ht.Type == "UmbrellaReport" {
 		ht.updateUmbrellaURI()
@@ -95,28 +114,16 @@ func (ht *HTTPTask) Run() {
 	if ht.P.Interval <= 0 {
 		return
 	}
+	tc := time.NewTicker(ht.P.Interval)
+	defer tc.Stop()
 
-	tc := time.NewTicker(ht.P.Interval).C
-	// Run indefinitely - for 5 years
-	d := time.Duration(fiveYears) * time.Second
-	hlc := time.NewTicker(d).C
-
-
-
-	//Run indefinitely
-	if ht.P.HowLong > 0 {
-		hlc = time.NewTicker(ht.P.HowLong).C
-		fmt.Printf("If not inturptted , this task will run for duration %v ", ht.P.HowLong)
-	} else {
-		fmt.Printf("If not inturptted , this task will run for duration %v ", d)
-	}
 
 	// TO DO: Timeout call before ticker kicks in
 L:
 
 	for {
 		select {
-		case timeNow := <-tc:
+		case timeNow := <-tc.C:
 			fmt.Printf("Ticker kicked at %v %d \n ", timeNow, timeNow.Unix())
 			if ht.Type == "UmbrellaReport" {
 				ht.updateUmbrellaURI()
@@ -134,12 +141,12 @@ L:
 
 		case uc := <-ht.UpdateC:
 			ht.Req = uc
-		case <-hlc: //How long count
-			fmt.Printf("Task ran for duration %v seconds", ht.P.HowLong)
+		case <-hlc.C: //How long count
+
 			break L
 		}
 	}
-
+	fmt.Printf("Task ended at time %v \n", time.Now())
 	//Don't execute again until first go routine has been executed.
 	fmt.Println("Exit")
 
