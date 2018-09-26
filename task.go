@@ -98,11 +98,17 @@ func (ht *HTTPTask) Run() {
 
 	tc := time.NewTicker(ht.P.Interval).C
 	// Run indefinitely - for 5 years
-	hlc := time.NewTicker(fiveYears).C
+	d := time.Duration(fiveYears) * time.Second
+	hlc := time.NewTicker(d).C
+
+
 
 	//Run indefinitely
 	if ht.P.HowLong > 0 {
 		hlc = time.NewTicker(ht.P.HowLong).C
+		fmt.Printf("If not inturptted , this task will run for duration %v ", ht.P.HowLong)
+	} else {
+		fmt.Printf("If not inturptted , this task will run for duration %v ", d)
 	}
 
 	// TO DO: Timeout call before ticker kicks in
