@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/simple"
+	"github.com/saswatp/simple"
 )
 
 func TestSend(t *testing.T) {

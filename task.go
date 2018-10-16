@@ -103,7 +103,6 @@ func (ht *HTTPTask) Run() {
 	hlc = time.NewTicker(ht.P.HowLong)
 	defer hlc.Stop()
 
-
 	if ht.Type == "UmbrellaReport" {
 		ht.updateUmbrellaURI()
 	}

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -39,6 +40,7 @@ type HTTPReq struct {
 	TLSHandshakeTimeout time.Duration
 	KeepAlive           time.Duration
 	TLSConfig           *tls.Config
+	Proxy               string
 
 	// cookies           []*http.Cookie
 	// QueryString       interface{}
@@ -107,6 +109,7 @@ func (r *HTTPReq) Send() (resp *http.Response, e error) {
 		tht = r.TLSHandshakeTimeout
 	}
 
+
 	tr := &http.Transport{
 		Dial: (&net.Dialer{
 			Timeout:   dt,
@@ -115,6 +118,15 @@ func (r *HTTPReq) Send() (resp *http.Response, e error) {
 		TLSClientConfig:     r.TLSConfig,
 		TLSHandshakeTimeout: tht,
 		Proxy:               http.ProxyFromEnvironment,
+	}
+
+	if r.Proxy != "" {
+		proxyUrl,err := url.Parse(r.Proxy)
+		e = err
+		if e != nil {
+			return
+		}
+		tr.Proxy = http.ProxyURL(proxyUrl)
 	}
 
 	//tr := &http.Transport{TLSClientConfig: r.TLSConfig}
