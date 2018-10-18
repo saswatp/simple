@@ -1,18 +1,19 @@
 package simple
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
-	"errors"
 )
 
 // Design Philosphy : Don't use channel for data passing. Instead use shared structure between go routines.
 
 const (
-	fiveYears = 157680000
+	fiveYears                   = 157680000
+	VariableUrlWithStartAndStop = "variableUrlWithStartAndStop"
 )
 
 type Task interface {
@@ -47,7 +48,7 @@ func NewHTTPTask(req HTTPReq, p PollParams, dataType string) (ht *HTTPTask) {
 	return
 }
 
-func (ht *HTTPTask) updateUmbrellaURI() (e error) {
+func (ht *HTTPTask) updateURI() (e error) {
 
 	var newURL *url.URL
 	var endTime, startTime int64
@@ -92,7 +93,7 @@ func (ht *HTTPTask) Run() {
 		// Run indefinitely - for 5 years
 		ht.P.HowLong = time.Duration(fiveYears) * time.Second
 	}
-	if ht.Req.DialTimeout > ht.P.HowLong || ht.Req.Timeout > ht.P.HowLong || ht.Req.TLSHandshakeTimeout > ht.P.HowLong{
+	if ht.Req.DialTimeout > ht.P.HowLong || ht.Req.Timeout > ht.P.HowLong || ht.Req.TLSHandshakeTimeout > ht.P.HowLong {
 		e = errors.New("Invalid parameter - All timeout values must be less than poll interval ")
 		ht.NotifyC <- e
 		return
@@ -103,8 +104,8 @@ func (ht *HTTPTask) Run() {
 	hlc = time.NewTicker(ht.P.HowLong)
 	defer hlc.Stop()
 
-	if ht.Type == "UmbrellaReport" {
-		ht.updateUmbrellaURI()
+	if ht.Type == VariableUrlWithStartAndStop {
+		ht.updateURI()
 	}
 	fmt.Println("Sending first request to ", ht.Req.URI)
 	ht.Res, e = ht.Req.Send()
@@ -116,7 +117,6 @@ func (ht *HTTPTask) Run() {
 	tc := time.NewTicker(ht.P.Interval)
 	defer tc.Stop()
 
-
 	// TO DO: Timeout call before ticker kicks in
 L:
 
@@ -124,8 +124,8 @@ L:
 		select {
 		case timeNow := <-tc.C:
 			fmt.Printf("Ticker kicked at %v %d \n ", timeNow, timeNow.Unix())
-			if ht.Type == "UmbrellaReport" {
-				ht.updateUmbrellaURI()
+			if ht.Type == VariableUrlWithStartAndStop {
+				ht.updateURI()
 			}
 			fmt.Printf("Requesting URL %s\n", ht.Req.URI)
 			ht.Res, e = ht.Req.Send()
