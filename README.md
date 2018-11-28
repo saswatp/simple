@@ -1,2 +1,2 @@
 # simple
-  Another HTTP library for golang. This has a simple,unpretentious and straightforward interface. Handles different timeouts in a single structure making it easy for using.
+  HTTP task library for golang. This has a simple,unpretentious and straightforward interface. Handles http polling of a resource and provides response in the callback.
