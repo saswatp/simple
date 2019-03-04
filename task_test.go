@@ -40,7 +40,7 @@ func TestSend(t *testing.T) {
 
 func TestHTTPTask_Run(t *testing.T) {
 
-	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&end="
+	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&stop="
 
 	fmt.Println("Test start : Received URI ", uri)
 
@@ -51,10 +51,10 @@ func TestHTTPTask_Run(t *testing.T) {
 		Method:        "GET",
 		Body:          nil,
 		RetryCount:    2,
-		ShowDebug:     false,
+		ShowDebug:     true,
 		AP: simple.AuthParams{
-			UserName: "34d43d3a6ec3463e9a5f5565716caa5d",
-			Password: "da2a8e4204e84939a3c43449df44b93b",
+			UserName: "4a31462421b4929bc6cf42f871c67ed",
+			Password: "ccfd64025ed74615a363cc154068b5ab",
 		},
 		DialTimeout:         10 * time.Second,
 		Timeout:             10 * time.Second,
@@ -70,7 +70,8 @@ func TestHTTPTask_Run(t *testing.T) {
 		HowLong:  120 * time.Second,
 	}
 
-	task := simple.NewHTTPTask(req, p, "UmbrellaReport")
+	task := simple.NewHTTPTask(req, p, simple.VariableUrlWithStartAndStop)
+
 	//task.Run()
 
 	var count int
@@ -105,7 +106,7 @@ L:
 
 func TestHTTPTask_RunInvalidPoll(t *testing.T) {
 
-	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&end="
+	uri := "https://reports.api.umbrella.com/v1/organizations/2431158/security-activity?start=&stop="
 
 	fmt.Println("Received URI ", uri)
 

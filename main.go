@@ -75,12 +75,14 @@ func (r *HTTPReq) Send() (resp *http.Response, e error) {
 		return
 	}
 
+	// Set default mime-type
+	httpreq.Header.Set("content-type", "application/json")
+
 	if len(r.Headers) != 0 {
 		for key, value := range r.Headers {
 			httpreq.Header.Set(key, value)
 		}
 	}
-	//httpreq.Header.Set("content-type", "application/json")
 	if r.ContentLength != 0 {
 		httpreq.ContentLength = r.ContentLength
 	}
@@ -109,7 +111,6 @@ func (r *HTTPReq) Send() (resp *http.Response, e error) {
 		tht = r.TLSHandshakeTimeout
 	}
 
-
 	tr := &http.Transport{
 		Dial: (&net.Dialer{
 			Timeout:   dt,
@@ -121,12 +122,17 @@ func (r *HTTPReq) Send() (resp *http.Response, e error) {
 	}
 
 	if r.Proxy != "" {
-		proxyUrl,err := url.Parse(r.Proxy)
+		proxyUrl, err := url.Parse(r.Proxy)
 		e = err
 		if e != nil {
 			return
 		}
 		tr.Proxy = http.ProxyURL(proxyUrl)
+	}
+
+	if r.ShowDebug {
+		fmt.Printf("HTTPReq = %+v \n", r)
+		fmt.Printf("HTTP transport = %+v \n", tr)
 	}
 
 	//tr := &http.Transport{TLSClientConfig: r.TLSConfig}

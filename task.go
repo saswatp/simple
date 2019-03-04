@@ -58,7 +58,7 @@ func (ht *HTTPTask) updateURI() (e error) {
 		return
 	}
 
-	endTimeStr := newURL.Query().Get("end")
+	endTimeStr := newURL.Query().Get("stop")
 	if endTimeStr == "" {
 		endTime = time.Now().Unix()
 		startTime = endTime - int64(ht.P.Interval.Seconds())
@@ -71,7 +71,7 @@ func (ht *HTTPTask) updateURI() (e error) {
 	q := newURL.Query()
 
 	q.Set("start", strconv.FormatInt(startTime, 10))
-	q.Set("end", strconv.FormatInt(endTime, 10))
+	q.Set("stop", strconv.FormatInt(endTime, 10))
 
 	newURL.RawQuery = q.Encode()
 	ht.Req.URI = newURL.String()
@@ -84,9 +84,14 @@ func (ht *HTTPTask) Run() {
 	var e error
 	var hlc *time.Ticker
 
-	defer close(ht.NotifyC)
-	defer close(ht.DoneC)
-	defer close(ht.UpdateC)
+	defer func() {
+
+		fmt.Println("Closing http task channels")
+
+		close(ht.DoneC)
+		close(ht.UpdateC)
+		close(ht.NotifyC)
+	}()
 
 	// To Do: Check if http timeout is greater than poll interval. If yes, fail the request
 	if ht.P.HowLong <= 0 {
@@ -109,6 +114,11 @@ func (ht *HTTPTask) Run() {
 	}
 	fmt.Println("Sending first request to ", ht.Req.URI)
 	ht.Res, e = ht.Req.Send()
+	if e != nil {
+		fmt.Println(e.Error())
+	} else {
+		fmt.Printf("%v \n", ht.Res.StatusCode)
+	}
 	ht.NotifyC <- e
 
 	if ht.P.Interval <= 0 {
@@ -129,6 +139,11 @@ L:
 			}
 			fmt.Printf("Requesting URL %s\n", ht.Req.URI)
 			ht.Res, e = ht.Req.Send()
+			if e != nil {
+				fmt.Println(e.Error())
+			} else {
+				fmt.Printf("%v \n", ht.Res.StatusCode)
+			}
 			ht.NotifyC <- e
 
 		case dc := <-ht.DoneC:
