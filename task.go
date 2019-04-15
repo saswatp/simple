@@ -31,20 +31,21 @@ type HTTPTask struct {
 }
 
 type PollParams struct {
-	Interval time.Duration
-	HowLong  time.Duration
-	Count    int
+	Interval        time.Duration
+	HowLong         time.Duration
+	Count           int
+	MaxFailureCount int
 }
 
 func NewHTTPTask(req HTTPReq, p PollParams, dataType string) (ht *HTTPTask) {
 	ht = &HTTPTask{
-		Type: dataType,
-		Req:  req,
-		P:    p,
+		Type:    dataType,
+		Req:     req,
+		P:       p,
+		DoneC:   make(chan bool),
+		NotifyC: make(chan error),
+		UpdateC: make(chan HTTPReq),
 	}
-	ht.DoneC = make(chan bool)
-	ht.NotifyC = make(chan error)
-	ht.UpdateC = make(chan HTTPReq)
 	return
 }
 
@@ -79,36 +80,61 @@ func (ht *HTTPTask) updateURI() (e error) {
 	return
 }
 
-func (ht *HTTPTask) Run() {
-
-	var e error
-	var hlc *time.Ticker
-
-	defer func() {
-
-		fmt.Println("Closing http task channels")
-
-		close(ht.DoneC)
-		close(ht.UpdateC)
-		close(ht.NotifyC)
-	}()
+func (ht *HTTPTask) validate() (e error) {
 
 	// To Do: Check if http timeout is greater than poll interval. If yes, fail the request
 	if ht.P.HowLong <= 0 {
 		// Run indefinitely - for 5 years
 		ht.P.HowLong = time.Duration(fiveYears) * time.Second
 	}
-	if ht.Req.DialTimeout > ht.P.HowLong || ht.Req.Timeout > ht.P.HowLong || ht.Req.TLSHandshakeTimeout > ht.P.HowLong {
+/*
+	if ht.Req.DialTimeout > ht.P.Interval || ht.Req.Timeout > ht.P.Interval || ht.Req.DialTimeout > ht.P.HowLong || ht.Req.Timeout > ht.P.HowLong || ht.Req.TLSHandshakeTimeout > ht.P.HowLong {
 		e = errors.New("Invalid parameter - All timeout values must be less than poll interval ")
+		return
+	}*/
+	switch interval := ht.P.Interval; {
+	case interval < ht.Req.DialTimeout&& ht.Req.DialTimeout != 0:
+		e = errors.New("Invalid parameter - interval < ht.Req.DialTimeout")
+		return
+	case interval < ht.Req.Timeout && ht.Req.Timeout != 0 :
+		e = errors.New("Invalid parameter - interval <  ht.Req.Timeout")
+		return
+	}
+	switch howLong := ht.P.HowLong; {
+	case howLong < ht.Req.DialTimeout && ht.Req.DialTimeout != 0:
+		e = errors.New("Invalid parameter - howLong < ht.Req.DialTimeout")
+		return
+	case howLong < ht.Req.Timeout && ht.Req.Timeout != 0 :
+
+		e = errors.New("Invalid parameter - howLong < ht.Req.Timeout")
+		return
+
+	}
+
+	fmt.Printf("If not inturptted , this task will run for duration %v at interval %v \n", ht.P.HowLong, ht.P.Interval)
+	return
+}
+
+func (ht *HTTPTask) Run() {
+
+	var e error
+	var hlc, tc *time.Ticker
+
+	defer func() {
+
+		fmt.Println("Closing task channels")
+		close(ht.DoneC)
+		close(ht.UpdateC)
+		close(ht.NotifyC)
+	}()
+
+	if e = ht.validate(); e != nil {
 		ht.NotifyC <- e
 		return
 	}
-	fmt.Printf("If not inturptted , this task will run for duration %v at interval %v \n", ht.P.HowLong, ht.P.Interval)
-
 	fmt.Printf("Task started at time %v \n", time.Now())
 	hlc = time.NewTicker(ht.P.HowLong)
 	defer hlc.Stop()
-
 	if ht.Type == VariableUrlWithStartAndStop {
 		ht.updateURI()
 	}
@@ -124,13 +150,14 @@ func (ht *HTTPTask) Run() {
 	if ht.P.Interval <= 0 {
 		return
 	}
-	tc := time.NewTicker(ht.P.Interval)
+	tc = time.NewTicker(ht.P.Interval)
 	defer tc.Stop()
 
 	// TO DO: Timeout call before ticker kicks in
 L:
 
 	for {
+		fmt.Print("Waiting ...")
 		select {
 		case timeNow := <-tc.C:
 			fmt.Printf("Ticker kicked at %v %d \n ", timeNow, timeNow.Unix())
@@ -139,11 +166,6 @@ L:
 			}
 			fmt.Printf("Requesting URL %s\n", ht.Req.URI)
 			ht.Res, e = ht.Req.Send()
-			if e != nil {
-				fmt.Println(e.Error())
-			} else {
-				fmt.Printf("%v \n", ht.Res.StatusCode)
-			}
 			ht.NotifyC <- e
 
 		case dc := <-ht.DoneC:
